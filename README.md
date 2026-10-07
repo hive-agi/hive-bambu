@@ -16,7 +16,7 @@ The portable core returns `{:ok value}` or `{:error {:kind ... :hint ...}}`: sli
 | `dev/hive_bambu/portability.cljc` | 83 assertions | same | same | same |
 | `src/hive_bambu/{catalog,ports,addon}.clj` | resource boundary, port, IAddon | — | — | — |
 | `test/hive_bambu/stub.clj` | recording/fault injection | — | — | — |
-| `resources/hive_bambu/*.edn` | 18 slicer actions, 17 MQTT commands, 6 blocked codes | injected values | injected values | injected values |
+| `resources/hive_bambu/*.edn` | 57 slicer options (18 actions), 17 MQTT commands, 6 blocked codes | injected values | injected values | injected values |
 
 Present transport: **test-only in-memory stub**. Planned, not implemented: `:python` via libpython-clj/paho-mqtt; `:cljs` via native npm imports (`mqtt`, `basic-ftp`); `:cljrs` via Rust cdylib MQTT/TLS; `:slicer` via BambuStudio CLI built from source (separate AGPL subprocess only). No Python or Rust shell-outs; no direct dependency on `hive-mcp`.
 
