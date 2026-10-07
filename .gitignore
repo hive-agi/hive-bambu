@@ -7,3 +7,6 @@
 /local.deps.edn
 .nrepl-port
 /native/rust/target
+
+/node_modules/
+/.shadow-cljs/

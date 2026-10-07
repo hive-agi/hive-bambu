@@ -5,7 +5,9 @@
             [hive-bambu.core :as core]
             [hive-bambu.ports :as ports]
             [malli.core :as m]
-            [hive-bambu.schema :as schema]))
+            [hive-bambu.schema :as schema]
+            [hive-bambu.printer.gate :as gate]
+            [hive-bambu.printer.port :as printer-port]))
 
 (defn doctor
   "Diagnose packaged vocabulary and explicitly report unavailable live transports."
@@ -30,8 +32,10 @@
                  blocked (catalog/read-catalog "blocked_gcode")]
              (if (:error mqtt) mqtt
                  (if (:error blocked) blocked
-                     (ports/dispatch transport (:ok mqtt) (:ok blocked)
-                                     serial sequence-id name params))))
+                     (if (= name "print.project_file")
+                       (core/refusal :printer/missing-gate "Use the confirmed print pipeline with a fresh idle report and inspected G-code lines.")
+                       (ports/dispatch transport (:ok mqtt) (:ok blocked)
+                                       serial sequence-id name params)))))
     (core/refusal :bambu/unknown-command "Choose catalog, doctor or call.")))
 
 (m/=> execute [:=> [:cat :any map?] schema/response])
@@ -63,8 +67,10 @@
   (addon-type [_] :external)
   (capabilities [_] #{:tools :health-reporting})
   (initialize! [_ _]
-    (reset! state :ready)
-    {:success? true :errors []})
+    (if (satisfies? gate/PrintGate (:print-gate config))
+      (do (reset! state :ready) {:success? true :errors []})
+      {:success? false :errors [{:kind :printer/missing-gate
+                                 :hint "Install a PrintGate before mounting the Bambu addon."}]}))
   (shutdown! [_] (reset! state :down) nil)
   (tools [_] (if (= @state :ready) [(tool (:transport config))] []))
   (schema-extensions [_] {})

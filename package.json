@@ -1,0 +1,1 @@
+{"name":"hive-bambu-printer","private":true,"version":"0.1.0","license":"AGPL-3.0-or-later","dependencies":{"mqtt":"^5.15.0","basic-ftp":"^5.0.5"},"devDependencies":{"aedes":"^0.51.3"},"scripts":{"test:printer":"node --test test/node/printer.test.cjs"}}
