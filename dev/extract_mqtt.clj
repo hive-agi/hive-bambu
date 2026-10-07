@@ -12,7 +12,7 @@
 (let [source (slurp "/home/klein/PP/hive/clones-ref/bambu-mcp/src/mqtt-client.ts")
       commands (->> (str/split-lines source) (keep command-on-line) distinct sort
                     (mapv (fn [name] {:name name
-                                      :family (first (str/split name #"\."))
+                                      :family (subs name 0 (str/index-of name "."))
                                       :source "bambu-mcp/src/mqtt-client.ts"})))]
   (spit "resources/hive_bambu/mqtt.edn" (with-out-str (pp/pprint commands)))
   (println "Extracted" (count commands) "MQTT commands"))

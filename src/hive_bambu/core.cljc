@@ -53,7 +53,13 @@
   "Refuse blocked commands and excessive temperature settings.
    Safety tokens are supplied from extracted data; malformed lines fail closed."
   [blocked line]
-  (let [parts (when (string? line) (str/split (str/upper-case (str/trim line)) #"\s+"))
+  (let [upper (when (string? line) (str/upper-case (str/trim line)))
+        parts (when upper (remove empty? (loop [chars (seq upper) token "" result []]
+                                           (if-let [ch (first chars)]
+                                             (if (contains? #{\space \tab \newline \return \formfeed} ch)
+                                               (recur (next chars) "" (conj result token))
+                                               (recur (next chars) (str token ch) result))
+                                             (conj result token)))))
         opcode (first parts)
         param (second parts)
         temp? (contains? #{"M104" "M109" "M140"} opcode)
@@ -83,7 +89,9 @@
   [commands blocked serial sequence-id command params]
   (let [route (topic serial "request")
         known (lookup commands command)
-        [family operation] (when (string? command) (str/split command #"\."))
+        dot (when (string? command) (str/index-of command "."))
+        family (when dot (subs command 0 dot))
+        operation (when dot (subs command (inc dot)))
         param (or params {})]
     (cond
       (:error route) route
