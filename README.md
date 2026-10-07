@@ -1,6 +1,6 @@
 # hive-bambu
 
-A host-neutral `IAddon` exposing BambuStudio slicer and Bambu LAN-printer command vocabulary as **data and pure values**. Wave one does not connect to printers, upload files or execute a slicer. MIT, published as `io.github.hive-agi/hive-bambu` to Clojars.
+A host-neutral `IAddon` exposing BambuStudio slicer and Bambu LAN-printer command vocabulary as **data and pure values**. Wave one does not connect to printers, upload files or execute a slicer. AGPL-3.0-or-later, published as `io.github.hive-agi/hive-bambu` to Clojars.
 
 ## Interface
 
@@ -18,7 +18,7 @@ The portable core returns `{:ok value}` or `{:error {:kind ... :hint ...}}`: sli
 | `test/hive_bambu/stub.clj` | recording/fault injection | — | — | — |
 | `resources/hive_bambu/*.edn` | 57 slicer options (18 actions), 17 MQTT commands, 6 blocked codes | injected values | injected values | injected values |
 
-Present transport: **test-only in-memory stub**. Planned, not implemented: `:python` via libpython-clj/paho-mqtt; `:cljs` via native npm imports (`mqtt`, `basic-ftp`); `:cljrs` via Rust cdylib MQTT/TLS; `:slicer` via BambuStudio CLI built from source (separate AGPL subprocess only). No Python or Rust shell-outs; no direct dependency on `hive-mcp`.
+Present transport: **test-only in-memory stub**. Planned, not implemented: `:python` via libpython-clj/paho-mqtt; `:cljs` via native npm imports (`mqtt`, `basic-ftp`); `:cljrs` via Rust cdylib MQTT/TLS; `:slicer` via an in-process C ABI (`hive_call`/`hive_free`) linking libslic3r built from source. No Python or Rust shell-outs; no direct dependency on `hive-mcp`.
 
 ## Verification
 
@@ -47,4 +47,4 @@ No live printer, credentials, firmware signing, FTPS, whole-archive ZIP reading,
 
 ## Licensing
 
-This addon is MIT (see LICENSE). BambuStudio is AGPL-3.0 and remains separate; its CLI must never be linked into this addon. The read-only bambu-mcp and mcp-bambu references are MIT (see their LICENSE files). There is no vendored reference implementation here.
+This addon is AGPL-3.0-or-later (see LICENSE), following BambuStudio. A future slicer transport may link libslic3r in-process through a C ABI (`hive_call`/`hive_free`); this is planned, not implemented. The read-only bambu-mcp and mcp-bambu references are MIT (see their LICENSE files). There is no vendored reference implementation here.
