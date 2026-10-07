@@ -51,7 +51,7 @@
 
 (defn gcode-check
   "Refuse blocked commands and excessive temperature settings.
-   Safety tokens are supplied from extracted data."
+   Safety tokens are supplied from extracted data; malformed lines fail closed."
   [blocked line]
   (let [parts (when (string? line) (str/split (str/upper-case (str/trim line)) #"\s+"))
         opcode (first parts)
@@ -65,8 +65,12 @@
       (or (not (string? line)) (str/blank? line) (str/includes? line "\n")
           (str/includes? line "\r") (str/includes? line ";"))
       (refusal :bambu/invalid-gcode "Provide one nonempty G-code line, without comments or line breaks.")
-      (some #{opcode} blocked)
+      (some #(str/starts-with? opcode %) blocked)
       (refusal :bambu/blocked-gcode (str opcode " is blocked for safety; use the dedicated printer control instead."))
+      (or (not (string? opcode)) (< (count opcode) 2)
+          (not (contains? #{\G \M} (first opcode)))
+          (not (every? #(<= (int \0) (int %) (int \9)) (subs opcode 1))))
+      (refusal :bambu/invalid-gcode "Provide a single G- or M-code followed by numeric digits.")
       (and temp? (nil? number))
       (refusal :bambu/invalid-temperature "Temperature commands require an integer S parameter (at most 7 digits).")
       (and temp? (> number (if (= opcode "M140") 120 300)))
