@@ -7,7 +7,11 @@
             [hive-bambu.printer.schema]
             [hive-bambu.addon]
             [hive-bambu.catalog]
-            [hive-bambu.ports]))
+            [hive-bambu.ports]
+            [hive-bambu.slicer.domain]
+            [hive-bambu.slicer.port]
+            [hive-bambu.slicer.settings]
+            [hive-bambu.slicer.flatpak]))
 
 (defn source-defns [file]
   (let [contents (slurp file)

@@ -9,7 +9,7 @@
           end (str/index-of line "\"" start)]
       (when end (subs line start end)))))
 
-(let [source (slurp "/home/klein/PP/hive/clones-ref/bambu-mcp/src/mqtt-client.ts")
+(let [source (slurp (str (System/getProperty "user.home") "/PP/hive/clones-ref/bambu-mcp/src/mqtt-client.ts"))
       commands (->> (str/split-lines source) (keep command-on-line) distinct sort
                     (mapv (fn [name] {:name name
                                       :family (subs name 0 (str/index-of name "."))

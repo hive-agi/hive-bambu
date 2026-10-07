@@ -23,7 +23,7 @@ for host in "$@"; do
   case "$host" in
     cljw) command -v cljw >/dev/null || { echo 'Install cljw first' >&2; exit 2; }
           run cljw cljw -cp src:dev dev/portability.cljw ;;
-    cljrs) binary=${CLJRS:-/home/klein/PP/clojurust/target/debug/cljrs}
+    cljrs) binary=${CLJRS:-$HOME/PP/clojurust/target/debug/cljrs}
            [[ -x $binary ]] || { echo "Build cljrs first: $binary" >&2; exit 2; }
            run cljrs "$binary" run --src-path src --src-path dev dev/portability.cljrs ;;
     cljs) command -v clojure >/dev/null || { echo 'Install Clojure CLI first' >&2; exit 2; }
