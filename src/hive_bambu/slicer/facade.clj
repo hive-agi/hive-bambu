@@ -87,6 +87,18 @@
     "export" (export s request output-root)
     {:error {:type :slicer/unknown-command :command command}}))
 
+(defn wire-request
+  "Normalize tool JSON request keys and model format without changing raw override keys."
+  [request]
+  (let [keys->keywords (fn [row] (into {} (map (fn [[k v]] [(if (string? k) (keyword k) k) v])) row))
+        row (keys->keywords request)
+        model (keys->keywords (:model row))
+        preset (keys->keywords (:preset row))
+        overrides (keys->keywords (or (:overrides row) {}))]
+    (cond-> (assoc row :model (update model :format #(if (string? %) (keyword %) %)) :preset preset)
+      (contains? row :overrides) (assoc :overrides overrides))))
+(m/=> wire-request [:=> [:cat map?] map?])
+
 (defn tool
   "Project slicer operations into one tool with a closed command vocabulary."
   [s]
@@ -99,8 +111,12 @@
                  :required ["command"]}
    :annotations {:readOnlyHint false :destructiveHint false}
    :handler (fn [args]
-              (let [args (into {} (map (fn [[k v]] [(keyword k) v])) args)
-                    outcome (command s args)]
+              (let [row (into {} (map (fn [[k v]] [(if (string? k) (keyword k) k) v])) args)
+                    row (cond-> row
+                          (:request row) (update :request wire-request)
+                          (:variants row) (update :variants #(mapv (fn [variant]
+                                                                    (into {} (map (fn [[k v]] [(if (string? k) (keyword k) k) v])) variant)) %)))
+                    outcome (command s row)]
                 {:isError (boolean (:error outcome))
                  :content [{:type "text" :text (pr-str (or (:ok outcome) (:error outcome)))}]}))})
 

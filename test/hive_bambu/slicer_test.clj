@@ -89,6 +89,20 @@
       (is (every? #(number? (get-in % [:estimate :print-seconds])) rows))
       (is (every? #(number? (get-in % [:estimate :filament-g])) rows)))))
 
+(deftest slicer-wire-tool
+  (let [request (request)
+        wire {"model" {"path" (get-in request [:model :path]) "format" "stl"
+                       "sha256" (get-in request [:model :sha256]) "bytes" (get-in request [:model :bytes])}
+              "preset" {"printer" (get-in request [:preset :printer])
+                        "process" (get-in request [:preset :process])
+                        "filament" (get-in request [:preset :filament])}
+              "overrides" {"layer_height" 0.2}}
+        handler (:handler (facade/tool (port/stub)))
+        result (handler {"command" "slice" "request" wire})]
+    (is (not (:isError result)) (pr-str result))
+    (is (clojure.string/includes? (get-in result [:content 0 :text]) "stub.gcode.3mf"))
+    (is (= :slicer/invalid-model (get-in (facade/command (port/stub) {:command "slice" :request (assoc-in request [:model :sha256] "bad")}) [:error :type])))))
+
 (deftrifecta override-trifecta
   #'settings/valid-overrides?
   {:golden-path "test/golden/slicer-overrides.edn"
