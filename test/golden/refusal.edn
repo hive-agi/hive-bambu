@@ -1,0 +1,2 @@
+{:missing {:error {:kind :bambu/missing, :hint "Provide binary"}},
+ :unknown {:error {:kind :bambu/unknown, :hint "Check catalog"}}}

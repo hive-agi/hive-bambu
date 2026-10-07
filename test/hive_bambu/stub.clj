@@ -24,3 +24,14 @@
   "Decorate an injected transport with a selective fault predicate."
   [wrapped fail?]
   (->Fault wrapped fail?))
+
+(defrecord Recording [wrapped received]
+  ports/PrinterTransport
+  (send-request [_ publication]
+    (swap! received conj publication)
+    (ports/send-request wrapped publication)))
+
+(defn recording
+  "Decorate a printer port and record every publication before delegation."
+  [wrapped]
+  (->Recording wrapped (atom [])))

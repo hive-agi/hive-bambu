@@ -1,0 +1,9 @@
+{:blocked
+ {:error
+  {:kind :bambu/blocked-gcode,
+   :hint
+   "M112 is blocked for safety; use the dedicated printer control instead."}},
+ :pause
+ {:ok
+  {:topic "device/S1/request",
+   :payload {:print {:sequence_id "7", :command "pause"}}}}}
