@@ -3,7 +3,9 @@
   (:require [hive-addon.protocol :as addon]
             [hive-bambu.catalog :as catalog]
             [hive-bambu.core :as core]
-            [hive-bambu.ports :as ports]))
+            [hive-bambu.ports :as ports]
+            [malli.core :as m]
+            [hive-bambu.schema :as schema]))
 
 (defn doctor
   "Diagnose packaged vocabulary and explicitly report unavailable live transports."
@@ -14,6 +16,8 @@
      :transport :not-configured
      :slicer-binary :not-verified
      :hint "No live transports ship in wave one. Install a PrinterTransport adapter for MQTT; build BambuStudio's CLI to slice."}))
+
+(m/=> doctor [:=> [:cat] map?])
 
 (defn execute
   "Dispatch one of catalog, doctor, call; return only values, not exceptions."
@@ -29,6 +33,8 @@
                      (ports/dispatch transport (:ok mqtt) (:ok blocked)
                                      serial sequence-id name params))))
     (core/refusal :bambu/unknown-command "Choose catalog, doctor or call.")))
+
+(m/=> execute [:=> [:cat :any map?] schema/response])
 
 (defn tool
   "One consolidated MCP tool with a closed top-level command vocabulary."
@@ -48,6 +54,8 @@
                     outcome (execute transport args)]
                 {:isError (boolean (:error outcome))
                  :content [{:type "text" :text (pr-str (or (:ok outcome) (:error outcome)))}]}))})
+
+(m/=> tool [:=> [:cat :any] map?])
 
 (defrecord BambuAddon [state config]
   addon/IAddon
@@ -69,3 +77,5 @@
   "Manifest entry point; cfg may inject :transport for an embedding host."
   [cfg]
   (->BambuAddon (atom :down) (or cfg {})))
+
+(m/=> addon-ctor [:=> [:cat :any] :any])

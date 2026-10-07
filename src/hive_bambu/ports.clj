@@ -1,6 +1,8 @@
 (ns hive-bambu.ports
   "Transport port. Implementations supply their own MQTT signing and serialization."
-  (:require [hive-bambu.core :as core]))
+  (:require [hive-bambu.core :as core]
+            [malli.core :as m]
+            [hive-bambu.schema :as schema]))
 
 (defprotocol PrinterTransport
   (send-request [this publication]
@@ -18,3 +20,5 @@
                  (catch Exception e
                    (core/refusal :bambu/transport-failed
                                  (str "Transport failed; check printer connectivity and credentials: " (ex-message e))))))))
+
+(m/=> dispatch [:=> [:cat :any sequential? sequential? :any :any :any :any] schema/response])
