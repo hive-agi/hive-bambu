@@ -1,6 +1,7 @@
 (ns hive-bambu.printer.schema
   "Printer-side value objects and their Malli contracts."
-  (:require [malli.core :as m]))
+  (:require [malli.core :as m]
+            [hive-bambu.printer.promote :as promote]))
 
 (def SecretRef [:map {:closed true} [:scheme [:enum :pass :env]] [:path [:string {:min 1}]]])
 (def PrinterRef [:map {:closed true} [:name [:string {:min 1}]] [:host [:string {:min 1}]]
@@ -11,3 +12,7 @@
 (def Verdict [:or [:map [:ok :any]] ErrorValue])
 (def PrintRequest [:map [:confirm [:= true]] [:gcode-lines [:vector :string]]])
 (def TemperatureCaps [:map [:nozzle [:int {:min 0 :max 300}]] [:bed [:int {:min 0 :max 120}]]])
+
+(m/=> promote/merge-report [:=> [:cat [:maybe Report] map? :int] Verdict])
+
+(m/=> promote/authorize-print [:=> [:cat sequential? [:maybe Report] :int map?] Verdict])
