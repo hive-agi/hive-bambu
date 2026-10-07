@@ -22,7 +22,8 @@
    :outer_wall_speed {:category :process :min 1 :max 1000 :source-line 2245}
    :inner_wall_speed {:category :process :min 1 :max 1000 :source-line 4748}
    :nozzle_temperature {:category :filament :min 0 :max 360 :source-line 6080}
-   :bed_temperature {:category :filament :min 0 :max 150 :source-line 2825}
+   :cool_plate_temp {:category :filament :min 0 :max 150 :source-line 1277}
+   :hot_plate_temp {:category :filament :min 0 :max 150 :source-line 1297}
    :filament_type {:category :filament :enum #{"PLA" "PETG" "ABS" "ASA" "TPU" "PA" "PC"} :source-line 2825}})
 
 (def allowed-keys
@@ -52,7 +53,7 @@
 
 (defn- encoded [k v]
   (cond
-    (#{:outer_wall_speed :inner_wall_speed :nozzle_temperature :bed_temperature :filament_type} k) [(str v)]
+    (#{:outer_wall_speed :inner_wall_speed :nozzle_temperature :cool_plate_temp :hot_plate_temp :filament_type} k) [(str v)]
     (number? v) (str v (when (= k :sparse_infill_density) "%"))
     (boolean? v) (if v "1" "0")
     :else v))
