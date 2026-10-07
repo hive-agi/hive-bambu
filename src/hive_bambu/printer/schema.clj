@@ -13,6 +13,6 @@
 (def PrintRequest [:map [:confirm [:= true]] [:gcode-lines [:vector :string]]])
 (def TemperatureCaps [:map [:nozzle [:int {:min 0 :max 300}]] [:bed [:int {:min 0 :max 120}]]])
 
-(m/=> promote/merge-report [:=> [:cat [:maybe Report] map? :int] Verdict])
+(m/=> hive-bambu.printer.promote/merge-report [:=> [:cat [:maybe Report] map? :int] Verdict])
 
-(m/=> promote/authorize-print [:=> [:cat sequential? [:maybe Report] :int map?] Verdict])
+(m/=> hive-bambu.printer.promote/authorize-print [:=> [:cat sequential? [:maybe Report] :int map?] Verdict])

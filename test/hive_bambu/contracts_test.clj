@@ -4,6 +4,7 @@
             [clojure.java.io :as io]
             [malli.core :as m]
             [hive-bambu.contracts]
+            [hive-bambu.printer.schema]
             [hive-bambu.addon]
             [hive-bambu.catalog]
             [hive-bambu.ports]))
