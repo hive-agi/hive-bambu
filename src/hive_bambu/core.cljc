@@ -97,7 +97,11 @@
            (or (not (integer? (:param param))) (not (<= 1 (:param param) 166))))
       (refusal :bambu/invalid-speed "Set speed to an integer percentage from 1 to 166.")
       :else {:ok {:topic (:ok route)
-                  :payload {(keyword family) (merge {:sequence_id sequence-id :command operation} param)}}})))
+                  :payload {(keyword family)
+                            (merge {:sequence_id sequence-id :command operation}
+                                   (if (= command "print.print_speed")
+                                     (assoc param :param (str (:param param)))
+                                     param))}}})))
 
 (defn report
   "Project a decoded report map to the matching printer's report value."
