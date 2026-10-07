@@ -7,7 +7,8 @@
             [hive-bambu.slicer.domain :as domain]
             [hive-bambu.slicer.port :as port]
             [hive-bambu.slicer.settings :as settings]
-            [hive-bambu.slicer.flatpak :as flatpak]))
+            [hive-bambu.slicer.flatpak :as flatpak]
+            [hive-bambu.slicer.facade :as facade]))
 
 (def fixture "/home/klein/.cache/hive-craft-blender/out/hive-geometry-slab.stl")
 (defn request []
@@ -36,6 +37,22 @@
 (deftest stock-presets
   (when (:ok (flatpak/availability))
     (is (some #{"Bambu Lab X1 Carbon 0.4 nozzle.json"} (get-in (flatpak/presets) [:ok :machine])))))
+
+(deftest facade-compare-and-export
+  (let [request (request)
+        variants [{:layer_height 0.12 :sparse_infill_density 10}
+                  {:layer_height 0.20 :sparse_infill_density 15}
+                  {:layer_height 0.28 :sparse_infill_density 30}]
+        rows (:ok (facade/compare (port/stub) request variants))]
+    (is (= 3 (count rows)))
+    (is (= variants (mapv :overrides rows)))
+    (is (every? #(= 3600 (get-in % [:estimate :print-seconds])) rows))
+    (is (every? #(= 10.0 (get-in % [:estimate :filament-g])) rows))
+    (is (every? #(= :gcode-3mf (get-in % [:result :ok :outputs 0 :format])) rows))
+    (is (= 3 (count (facade/bbox-mm (:model request)))))
+    (is (= :slicer/invalid-model
+           (get-in (facade/export (port/stub) (assoc-in request [:model :sha256] "invalid")
+                                  (System/getProperty "java.io.tmpdir")) [:error :type])))))
 
 (deftrifecta override-trifecta
   #'settings/valid-overrides?
