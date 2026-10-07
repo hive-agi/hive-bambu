@@ -1,11 +1,13 @@
-{:blocked
- {:error
-  {:kind :bambu/blocked-gcode,
-   :hint
-   "M112 is blocked for safety; use the dedicated printer control instead."}},
- :hot
+{:hot
  {:error
   {:kind :bambu/unsafe-temperature,
    :hint
    "Temperature exceeds the nozzle (300 C) or bed (120 C) limit."}},
- :safe {:ok "G28"}}
+ :safe {:ok "G28"}
+ :m112 {:error {:kind :bambu/blocked-gcode :hint "M112 is blocked for safety; use the dedicated printer control instead."}}
+ :m502 {:error {:kind :bambu/blocked-gcode :hint "M502 is blocked for safety; use the dedicated printer control instead."}}
+ :m500 {:error {:kind :bambu/blocked-gcode :hint "M500 is blocked for safety; use the dedicated printer control instead."}}
+ :m501 {:error {:kind :bambu/blocked-gcode :hint "M501 is blocked for safety; use the dedicated printer control instead."}}
+ :m997 {:error {:kind :bambu/blocked-gcode :hint "M997 is blocked for safety; use the dedicated printer control instead."}}
+ :m999 {:error {:kind :bambu/blocked-gcode :hint "M999 is blocked for safety; use the dedicated printer control instead."}}
+ :prefix {:error {:kind :bambu/blocked-gcode :hint "M5020 is blocked for safety; use the dedicated printer control instead."}}}

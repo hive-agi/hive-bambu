@@ -45,14 +45,25 @@
   #'core/gcode-check
   {:golden-path "test/golden/gcode.edn"
    :apply? true
-   :cases {:safe [["M112"] "G28"] :blocked [["M112"] "M112"]
+   :cases {:safe [["M112" "M502" "M500" "M501" "M997" "M999"] "G28"]
+           :m112 [["M112"] "M112"]
+           :m502 [["M502"] "M502"]
+           :m500 [["M500"] "M500"]
+           :m501 [["M501"] "M501"]
+           :m997 [["M997"] "M997"]
+           :m999 [["M999"] "M999"]
+           :prefix [["M502"] "M5020"]
            :hot [["M112"] "M140 S121"]}
    :gen (gen/tuple (gen/return ["M112"])
                    (gen/elements ["G28" "M112" "M140 S121"]))
    :pred #(contains? #{:bambu/blocked-gcode :bambu/unsafe-temperature nil}
                       (get-in % [:error :kind]))
    :num-tests 80
-   :mutations [["always-safe" (fn [_ line] {:ok line})]]})
+   :mutations [["always-safe" (fn [_ line] {:ok line})]
+               ["exact-only" (fn [blocked line]
+                               (if (some #{line} blocked)
+                                 (core/refusal :bambu/blocked-gcode "blocked")
+                                 {:ok line}))]]})
 
 (deftrifecta plate-model-trifecta
   #'core/plate-model
