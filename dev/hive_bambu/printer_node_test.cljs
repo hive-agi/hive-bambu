@@ -32,6 +32,12 @@
         (.then (fn [downloaded]
                  (capture :download (when-let [bytes (:ok downloaded)] (.toString bytes)))
                  (capture :download-error (str (get-in downloaded [:error :kind])))
+                 (port/upload! files printer (.from (.-Readable (js/require "node:stream")) (clj->js ["new-gcode\n"])) "/new.gcode")))
+        (.then (fn [uploaded]
+                 (capture :uploaded (boolean (get-in uploaded [:ok :uploaded])))
+                 (port/upload! files printer (.from (.-Readable (js/require "node:stream")) (clj->js ["overwritten\n"])) "/existing.gcode")))
+        (.then (fn [existing]
+                 (capture :upload-existing (str (get-in existing [:error :kind])))
                  (port/close! link printer)))
         (.then (fn [closed]
                  (capture :closed (boolean (:ok closed)))

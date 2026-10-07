@@ -24,7 +24,8 @@ test('fake MQTT and implicit-FTPS exercise printer ports', {timeout:20000}, asyn
       const result = await exercise(printer,server.address().port,ftp.port);
       assert.deepEqual({...result},{connected:true,duplicate:':printer/owned',published:true,
         state:'IDLE',listing:1,'listing-error':'',download:'fake-printer-gcode\n',
-        'download-error':'',closed:true});
+        'download-error':'',uploaded:true,'upload-existing':':printer/path-exists',closed:true});
+      assert.equal(ftp.uploaded.get('/new.gcode').toString(),'new-gcode\n');
       assert.ok(ftp.commands.includes('PROT P'));
     } finally {await new Promise(resolve=>server.close(resolve)); await new Promise(resolve=>mqtt.close(resolve));}
   } finally {await ftp.close();}

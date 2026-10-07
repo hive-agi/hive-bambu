@@ -17,6 +17,7 @@ async function startFtps() {
   const events = new EventEmitter();
   const commands = [];
   const data = Buffer.from('fake-printer-gcode\n');
+  const uploaded = new Map();
   const server = tls.createServer({cert,key});
   server.on('secureConnection', socket => {
     socket.write('220 Fake printer FTP ready\r\n');
@@ -35,7 +36,7 @@ async function startFtps() {
         else if (verb === 'PASS') reply('230 Logged in');
         else if (verb === 'FEAT') reply('211 No features');
         else if (verb === 'TYPE' || verb === 'PBSZ' || verb === 'PROT' || verb === 'STRU' || verb === 'OPTS') reply('200 OK');
-        else if (verb === 'SIZE') reply(filename === '/existing.gcode' ? `213 ${data.length}` : '550 No such file');
+        else if (verb === 'SIZE') reply(filename === '/existing.gcode' ? `213 ${data.length}` : uploaded.has(filename) ? `213 ${uploaded.get(filename).length}` : '550 No such file');
         else if (verb === 'EPSV' || verb === 'PASV') {
           passive = tls.createServer({cert,key});
           passive.listen(0,'127.0.0.1', () => {
@@ -51,7 +52,7 @@ async function startFtps() {
             if (verb === 'RETR') stream.end(data);
             else if (verb === 'LIST') stream.end('-rw-r--r-- 1 owner group 19 Jan 01 00:00 existing.gcode\r\n');
             else if (verb === 'MLSD') stream.end(`type=file;size=${data.length}; existing.gcode\r\n`);
-            else { const chunks=[]; stream.on('data', b=>chunks.push(b));stream.on('end',()=>{events.emit('upload',Buffer.concat(chunks));}); }
+            else { const chunks=[]; stream.on('data', b=>chunks.push(b));stream.on('end',()=>{const payload=Buffer.concat(chunks);uploaded.set(filename,payload);events.emit('upload',payload);}); }
             stream.once('close',()=>{ transfer.close(); reply('226 Transfer complete'); });
           });
           passive = null;
@@ -61,7 +62,7 @@ async function startFtps() {
     });
   });
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
-  return {port:server.address().port, commands, events, cert, key,
+  return {port:server.address().port, commands, events, uploaded, cert, key,
     close:()=>new Promise(resolve=>server.close(()=>{fs.rmSync(dir,{recursive:true,force:true});resolve();}))};
 }
 module.exports={startFtps};
