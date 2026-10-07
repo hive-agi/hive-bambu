@@ -66,6 +66,16 @@
         (is (clojure.string/includes? (slurp (:order bundle)) "Model bbox (mm):"))
         (is (number? (get-in bundle [:estimate :print-seconds])))))))
 
+(deftest flatpak-override-slice
+  (when (:ok (flatpak/availability))
+    (let [result (port/slice! (flatpak/adapter "/home/klein/.cache/hive-craft-bambu/out" 180000)
+                              (assoc (request) :overrides {:layer_height 0.28 :sparse_infill_density 30}))]
+      (is (:ok result) (pr-str result))
+      (when-let [path (get-in result [:ok :outputs 0 :path])]
+        (is (.isFile (java.io.File. path)))
+        (is (.isFile (java.io.File. (.getParent (java.io.File. path)) "derived-process.json")))
+        (is (.isFile (java.io.File. (.getParent (java.io.File. path)) "derived-filament.json")))))))
+
 (deftrifecta override-trifecta
   #'settings/valid-overrides?
   {:golden-path "test/golden/slicer-overrides.edn"
