@@ -1,0 +1,6 @@
+{:project-id  "hive-bambu"
+ :description "IAddon exposing Bambu Lab 3D printing as MCP tools: a portable 3MF/plate core (JVM, cljw, cljrs), headless BambuStudio CLI slicing, and a LAN printer transport (MQTT/FTPS)."
+ :type        :library
+ :kg-backend  :datahike
+ :parent      "hive"
+ :carto       {:source-roots ["dev" "resources" "src" "test"]}}
