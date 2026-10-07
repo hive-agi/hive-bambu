@@ -15,25 +15,40 @@
   "Validate a local model and compute its immutable fingerprint; return a typed refusal on invalid input."
   [path]
   (let [f (File. (str path))
-        ext (some-> (.getName f) (str/split #"\\.") last str/lower-case)
+        name (.getName f)
+        dot (.lastIndexOf name ".")
+        ext (when (pos? dot) (str/lower-case (subs name (inc dot))))
         fmt ({"stl" :stl "3mf" :3mf "obj" :obj "step" :step} ext)
         n (.length f)]
     (if (or (not (.isFile f)) (not fmt) (zero? n) (> n (* 256 1024 1024)))
       {:error {:type :slicer/invalid-model :path (str path)}}
       (try
-        (if (and (= fmt :stl)
-                 (with-open [r (RandomAccessFile. f "r")]
-                   (and (>= n 84)
+        (let [valid-stl?
+              (or (not= fmt :stl)
+                  (with-open [r (RandomAccessFile. f "r")]
+                    (if (< n 84) false
                         (do (.seek r 80)
-                            (not= n (+ 84 (* 50 (Integer/toUnsignedLong (Integer/reverseBytes (.readInt r)))))))))
-                 (not (str/starts-with? (slurp f :encoding "US-ASCII") "solid")))
-          {:error {:type :slicer/invalid-model :path (str path)}}
-          (let [digest (MessageDigest/getInstance "SHA-256")]
-            (with-open [input (java.io.FileInputStream. f)]
-              (let [buf (byte-array 65536)]
-                (loop [] (let [read (.read input buf)]
-                           (when (pos? read) (.update digest buf 0 read) (recur))))))
-            {:ok {:path (.getAbsolutePath f) :format fmt :sha256 (format "%064x" (BigInteger. 1 (.digest digest))) :bytes n}}))
+                            (let [triangles (Integer/toUnsignedLong (Integer/reverseBytes (.readInt r)))]
+                              (if (= n (+ 84 (* 50 triangles)))
+                                (loop [remaining triangles]
+                                  (if (zero? remaining) true
+                                      (let [finite? (loop [i 0]
+                                                      (if (= i 12) true
+                                                          (let [v (Float/intBitsToFloat (Integer/reverseBytes (.readInt r)))]
+                                                            (if (Float/isFinite v) (recur (inc i)) false))))]
+                                        (if finite? (do (.skipBytes r 2) (recur (dec remaining))) false))))
+                                (do (.seek r 0)
+                                    (let [header (byte-array 5)]
+                                      (.readFully r header)
+                                      (= "solid" (String. header "US-ASCII"))))))))))]
+          (if-not valid-stl?
+            {:error {:type :slicer/invalid-model :path (str path)}}
+            (let [digest (MessageDigest/getInstance "SHA-256")]
+              (with-open [input (java.io.FileInputStream. f)]
+                (let [buf (byte-array 65536)]
+                  (loop [] (let [read (.read input buf)]
+                             (when (pos? read) (.update digest buf 0 read) (recur))))))
+              {:ok {:path (.getAbsolutePath f) :format fmt :sha256 (format "%064x" (BigInteger. 1 (.digest digest))) :bytes n}})))
         (catch Exception e {:error {:type :slicer/invalid-model :message (.getMessage e)}})))))
 
 (m/=> artifact [:=> [:cat :any] map?])
