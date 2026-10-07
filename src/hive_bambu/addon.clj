@@ -5,7 +5,8 @@
             [hive-bambu.core :as core]
             [hive-bambu.ports :as ports]
             [malli.core :as m]
-            [hive-bambu.schema :as schema]))
+            [hive-bambu.schema :as schema]
+            [hive-bambu.slicer.facade :as slicer]))
 
 (defn doctor
   "Diagnose packaged vocabulary and explicitly report unavailable live transports."
@@ -66,7 +67,7 @@
     (reset! state :ready)
     {:success? true :errors []})
   (shutdown! [_] (reset! state :down) nil)
-  (tools [_] (if (= @state :ready) [(tool (:transport config))] []))
+  (tools [_] (if (= @state :ready) [(tool (:transport config)) (slicer/default-tool)] []))
   (schema-extensions [_] {})
   (excluded-tools [_] #{})
   (hooks [_] {})
