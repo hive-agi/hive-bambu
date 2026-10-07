@@ -76,6 +76,19 @@
         (is (.isFile (java.io.File. (.getParent (java.io.File. path)) "derived-process.json")))
         (is (.isFile (java.io.File. (.getParent (java.io.File. path)) "derived-filament.json")))))))
 
+(deftest flatpak-compare-variants
+  (when (:ok (flatpak/availability))
+    (let [variants [{:layer_height 0.12 :sparse_infill_density 10}
+                    {:layer_height 0.20 :sparse_infill_density 15}
+                    {:layer_height 0.28 :sparse_infill_density 30}]
+          rows (:ok (facade/compare (flatpak/adapter "/home/klein/.cache/hive-craft-bambu/out" 180000)
+                                    (request) variants))]
+      (is (= 3 (count rows)))
+      (is (= variants (mapv :overrides rows)))
+      (is (every? #(get-in % [:result :ok :outputs 0 :path]) rows) (pr-str rows))
+      (is (every? #(number? (get-in % [:estimate :print-seconds])) rows))
+      (is (every? #(number? (get-in % [:estimate :filament-g])) rows)))))
+
 (deftrifecta override-trifecta
   #'settings/valid-overrides?
   {:golden-path "test/golden/slicer-overrides.edn"
