@@ -54,6 +54,18 @@
            (get-in (facade/export (port/stub) (assoc-in request [:model :sha256] "invalid")
                                   (System/getProperty "java.io.tmpdir")) [:error :type])))))
 
+(deftest flatpak-export-bundle
+  (when (:ok (flatpak/availability))
+    (let [result (facade/export (flatpak/adapter "/home/klein/.cache/hive-craft-bambu/out" 180000)
+                                (request) "/home/klein/.cache/hive-craft-bambu/orders")]
+      (is (:ok result) (pr-str result))
+      (when-let [bundle (:ok result)]
+        (is (.isFile (java.io.File. (:model bundle))))
+        (is (.isFile (java.io.File. (:slice bundle))))
+        (is (.isFile (java.io.File. (:order bundle))))
+        (is (clojure.string/includes? (slurp (:order bundle)) "Model bbox (mm):"))
+        (is (number? (get-in bundle [:estimate :print-seconds])))))))
+
 (deftrifecta override-trifecta
   #'settings/valid-overrides?
   {:golden-path "test/golden/slicer-overrides.edn"
