@@ -1,0 +1,11 @@
+{:blocked
+ {:error
+  {:kind :bambu/blocked-gcode,
+   :hint
+   "M112 is blocked for safety; use the dedicated printer control instead."}},
+ :hot
+ {:error
+  {:kind :bambu/unsafe-temperature,
+   :hint
+   "Temperature exceeds the nozzle (300 C) or bed (120 C) limit."}},
+ :safe {:ok "G28"}}

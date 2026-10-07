@@ -1,0 +1,5 @@
+{:invalid-plate
+ {:error
+  {:kind :bambu/invalid-plate,
+   :hint "Plate must be 0 (all) or a positive integer."}},
+ :valid {:ok ["studio" "--slice" "0" "--outputdir" "out" "piece.3mf"]}}

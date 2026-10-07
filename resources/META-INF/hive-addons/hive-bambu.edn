@@ -1,0 +1,6 @@
+{:addon/id "hive.bambu" :addon/kind :addon :addon/type :external
+ :addon/version "0.1.0" :addon/init-ns "hive-bambu.addon" :addon/init-fn "addon-ctor"
+ :addon/config {} :addon/capabilities #{:tools :health-reporting}
+ :addon/dependencies #{} :addon/description "Portable BambuStudio slicing and Bambu printer command vocabulary; stub transport in wave one."
+ :addon/maturity :experimental :addon/license "MIT" :addon/trust-class :foss
+ :addon/lifecycle {:policy :lazy :idle-ms 900000}}
