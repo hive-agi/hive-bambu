@@ -6,7 +6,10 @@
             [hive-bambu.contracts]
             [hive-bambu.addon]
             [hive-bambu.catalog]
-            [hive-bambu.ports]))
+            [hive-bambu.ports]
+            [hive-bambu.slicer.domain]
+            [hive-bambu.slicer.port]
+            [hive-bambu.slicer.flatpak]))
 
 (defn source-defns [file]
   (let [contents (slurp file)
