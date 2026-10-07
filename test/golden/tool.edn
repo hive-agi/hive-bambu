@@ -1,0 +1,5 @@
+{:unconfigured
+ {:name "bambu",
+  :description
+  "Discover BambuStudio and printer commands, diagnose readiness, or call through an injected printer port. Wave one has no live transport.",
+  :annotations {:readOnlyHint false, :destructiveHint true}}}

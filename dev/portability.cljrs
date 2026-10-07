@@ -1,0 +1,4 @@
+(require '[hive-bambu.portability :as p])
+(let [result (p/run-gate)]
+  (when (:error result)
+    (throw (ex-info "portable assertions failed" result))))

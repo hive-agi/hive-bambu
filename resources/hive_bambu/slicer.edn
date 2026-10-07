@@ -1,0 +1,250 @@
+[{:name "export_3mf",
+  :group "action",
+  :type "coString",
+  :doc "Export project as 3MF."}
+ {:name "export_slicedata",
+  :group "action",
+  :type "coString",
+  :doc "Export slicing data to a folder."}
+ {:name "load_slicedata",
+  :group "action",
+  :type "coStrings",
+  :doc "Load cached slicing data from directory"}
+ {:name "export_stl",
+  :group "action",
+  :type "coBool",
+  :doc "Export the objects as single STL."}
+ {:name "export_stls",
+  :group "action",
+  :type "coString",
+  :doc "Export the objects as multiple stls to directory"}
+ {:name "slice",
+  :group "action",
+  :type "coInt",
+  :doc "Slice the plates: 0-all plates, i-plate i, others-invalid",
+  :cli "slice"}
+ {:name "export_png",
+  :group "action",
+  :type "coInt",
+  :doc "Export png of plate: 0-all plates, i-plate i, others-invalid",
+  :cli "export-png"}
+ {:name "help",
+  :group "action",
+  :type "coBool",
+  :doc "Show command help.",
+  :cli "help|h"}
+ {:name "uptodate",
+  :group "action",
+  :type "coBool",
+  :doc "Update the configs values of 3mf to latest.",
+  :cli "uptodate"}
+ {:name "load_defaultfila",
+  :group "action",
+  :type "coBool",
+  :doc "Load first filament as default for those not loaded"}
+ {:name "min_save",
+  :group "action",
+  :type "coBool",
+  :doc "export 3mf with minimum size."}
+ {:name "mtcpp",
+  :group "action",
+  :type "coInt",
+  :doc "max triangle count per plate for slicing.",
+  :cli "mtcpp"}
+ {:name "mstpp",
+  :group "action",
+  :type "coInt",
+  :doc "max slicing time per plate in seconds.",
+  :cli "mstpp"}
+ {:name "no_check",
+  :group "action",
+  :type "coBool",
+  :doc
+  "Do not run any validity checks, such as gcode path conflicts check."}
+ {:name "normative_check",
+  :group "action",
+  :type "coBool",
+  :doc "Check the normative items."}
+ {:name "info",
+  :group "action",
+  :type "coBool",
+  :doc "Output the model's information."}
+ {:name "export_settings",
+  :group "action",
+  :type "coString",
+  :doc "Export settings to a file."}
+ {:name "pipe",
+  :group "action",
+  :type "coString",
+  :doc "Send progress to pipe."}
+ {:name "arrange",
+  :group "transform",
+  :type "coInt",
+  :doc "Arrange options: 0-disable, 1-enable, others-auto"}
+ {:name "repetitions",
+  :group "transform",
+  :type "coInt",
+  :doc "Repetition count of the whole model"}
+ {:name "ensure_on_bed",
+  :group "transform",
+  :type "coBool",
+  :doc
+  "Lift the object above the bed when it is partially below. Disabled by default"}
+ {:name "assemble",
+  :group "transform",
+  :type "coBool",
+  :doc
+  "Arrange the supplied models in a plate and merge them in a single model in order to perform actions once."}
+ {:name "convert_unit",
+  :group "transform",
+  :type "coBool",
+  :doc "Convert the units of model"}
+ {:name "orient",
+  :group "transform",
+  :type "coInt",
+  :doc "Orient options: 0-disable, 1-enable, others-auto"}
+ {:name "rotate",
+  :group "transform",
+  :type "coFloat",
+  :doc "Rotation angle around the Z axis in degrees."}
+ {:name "rotate_x",
+  :group "transform",
+  :type "coFloat",
+  :doc "Rotation angle around the X axis in degrees."}
+ {:name "rotate_y",
+  :group "transform",
+  :type "coFloat",
+  :doc "Rotation angle around the Y axis in degrees."}
+ {:name "scale",
+  :group "transform",
+  :type "coFloat",
+  :doc "Scale the model by a float factor"}
+ {:name "load_settings",
+  :group "misc",
+  :type "coStrings",
+  :doc "Load process/machine settings from the specified file"}
+ {:name "load_filaments",
+  :group "misc",
+  :type "coStrings",
+  :doc "Load filament settings from the specified file list"}
+ {:name "skip_objects",
+  :group "misc",
+  :type "coInts",
+  :doc "Skip some objects in this print"}
+ {:name "clone_objects",
+  :group "misc",
+  :type "coInts",
+  :doc "Clone objects in the load list"}
+ {:name "uptodate_settings",
+  :group "misc",
+  :type "coStrings",
+  :doc
+  "load uptodate process/machine settings from the specified file when using uptodate"}
+ {:name "uptodate_filaments",
+  :group "misc",
+  :type "coStrings",
+  :doc
+  "load uptodate filament settings from the specified file when using uptodate"}
+ {:name "downward_check",
+  :group "misc",
+  :type "coBool",
+  :doc
+  "if enabled, check whether current machine downward compatible with the machines in the list"}
+ {:name "downward_settings",
+  :group "misc",
+  :type "coStrings",
+  :doc "the machine settings list need to do downward checking"}
+ {:name "load_assemble_list",
+  :group "misc",
+  :type "coString",
+  :doc "Load assemble object list from config file"}
+ {:name "datadir",
+  :group "misc",
+  :type "coString",
+  :doc
+  "Use and store all program settings at the given directory instead of the default location."}
+ {:name "outputdir",
+  :group "misc",
+  :type "coString",
+  :doc "Output directory for the exported files."}
+ {:name "debug",
+  :group "misc",
+  :type "coInt",
+  :doc
+  "Sets debug logging level. 0:fatal, 1:error, 2:warning, 3:info, 4:debug, 5:trace\\n"}
+ {:name "estimate_mode",
+  :group "misc",
+  :type "coBool",
+  :doc
+  "When enabled, automatically fill filament presets and extruder state for machine estimation after machine switch"}
+ {:name "check_preset",
+  :group "misc",
+  :type "coBool",
+  :doc
+  "If enabled, check whether the externally loaded filament presets are compatible with the target printer"}
+ {:name "enable_timelapse",
+  :group "misc",
+  :type "coBool",
+  :doc "If enabled, this slicing will be considered using timelapse"}
+ {:name "load_custom_gcodes",
+  :group "misc",
+  :type "coString",
+  :doc "Load custom gcode from json"}
+ {:name "load_filament_ids",
+  :group "misc",
+  :type "coInts",
+  :doc "Load filament ids for each object"}
+ {:name "allow_multicolor_oneplate",
+  :group "misc",
+  :type "coBool",
+  :doc
+  "If enabled, the arrange will allow multiple color on one plate"}
+ {:name "allow_rotations",
+  :group "misc",
+  :type "coBool",
+  :doc
+  "If enabled, the arrange will allow rotations when place object"}
+ {:name "avoid_extrusion_cali_region",
+  :group "misc",
+  :type "coBool",
+  :doc
+  "If enabled, the arrange will avoid extrusion calibrate region when place object"}
+ {:name "skip_modified_gcodes",
+  :group "misc",
+  :type "coBool",
+  :doc
+  "Skip the modified gcodes in 3mf from Printer or filament Presets"}
+ {:name "skip_useless_pick",
+  :group "misc",
+  :type "coBool",
+  :doc "Skip generating useless pick/top images into 3mf"}
+ {:name "makerlab_name",
+  :group "misc",
+  :type "coString",
+  :doc "MakerLab name to generate this 3mf"}
+ {:name "makerlab_version",
+  :group "misc",
+  :type "coString",
+  :doc "MakerLab version to generate this 3mf"}
+ {:name "metadata_name",
+  :group "misc",
+  :type "coStrings",
+  :doc "matadata name list added into 3mf"}
+ {:name "metadata_value",
+  :group "misc",
+  :type "coStrings",
+  :doc "matadata value list added into 3mf"}
+ {:name "allow_newer_file",
+  :group "misc",
+  :type "coBool",
+  :doc "Allow 3mf with newer version to be sliced"}
+ {:name "allow_mix_temp",
+  :group "misc",
+  :type "coBool",
+  :doc
+  "Allow filaments with high/low temperature to be printed together"}
+ {:name "camera_view",
+  :group "misc",
+  :type "coInt",
+  :doc
+  "Camera view angle for exporting png: 0-Iso, 1-Top_Front, 2-Left, 3-Right, 10-Iso_1, 11-Iso_2, 12-Iso_3"}]

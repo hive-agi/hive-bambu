@@ -1,0 +1,4 @@
+;; cljw impersonates :clj in reader conditionals; this launcher stays off JVM paths.
+(require '[hive-bambu.portability :as p])
+(let [outcome (p/run-gate)]
+  (when (:error outcome) (System/exit 1)))

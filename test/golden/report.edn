@@ -1,0 +1,6 @@
+{:matching {:ok {:print {:sequence_id "7"}, :sequence-id "7"}},
+ :wrong
+ {:error
+  {:kind :bambu/unexpected-topic,
+   :hint
+   "Subscribe to device/<serial>/report for the intended serial."}}}

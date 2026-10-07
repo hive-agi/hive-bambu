@@ -1,0 +1,7 @@
+{:empty {:ok {:object-ids [], :object-count 0}},
+ :entity
+ {:error
+  {:kind :bambu/unsafe-xml,
+   :hint
+   "3MF XML must not contain entities or a DTD; unzip and sanitize first."}},
+ :one {:ok {:object-ids ["3"], :object-count 1}}}

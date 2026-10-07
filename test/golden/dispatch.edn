@@ -1,0 +1,10 @@
+{:invalid
+ {:error
+  {:kind :bambu/invalid-serial,
+   :hint
+   "Use a nonempty alphanumeric serial (hyphens allowed); MQTT wildcards and separators are forbidden."}},
+ :missing
+ {:error
+  {:kind :bambu/no-transport,
+   :hint
+   "No printer transport configured. Supply a PrinterTransport adapter; wave one ships only a test stub."}}}

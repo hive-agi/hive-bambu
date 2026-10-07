@@ -1,0 +1,5 @@
+{:bad
+ {:error
+  {:kind :bambu/unknown-catalog,
+   :hint "Choose slicer, mqtt or blocked_gcode."}},
+ :blocked {:ok ["M112" "M502" "M500" "M501" "M997" "M999"]}}

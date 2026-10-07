@@ -1,0 +1,6 @@
+{:diagnostic
+ {:catalog {:slicer 57, :mqtt 17},
+  :transport :not-configured,
+  :slicer-binary :not-verified,
+  :hint
+  "No live transports ship in wave one. Install a PrinterTransport adapter for MQTT; build BambuStudio's CLI to slice."}}

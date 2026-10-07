@@ -1,0 +1,6 @@
+{:request {:ok "device/S123/request"},
+ :wildcard
+ {:error
+  {:kind :bambu/invalid-serial,
+   :hint
+   "Use a nonempty alphanumeric serial (hyphens allowed); MQTT wildcards and separators are forbidden."}}}
