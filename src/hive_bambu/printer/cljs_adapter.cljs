@@ -48,7 +48,7 @@
                                   (when-not (verify-cert pins (:serial printer) insecure? cert)
                                     (js/Error. "TLS certificate pin mismatch.")))})))
 
-(defrecord CljsLink [sessions pins insecure?]
+(defrecord CljsLink [sessions pins insecure? port]
   port/PrinterLink
   (connect! [_ printer]
     (if-not (m/validate schema/PrinterRef printer)
@@ -59,9 +59,11 @@
           (js/Promise.
            (fn [resolve _]
              (let [serial (:serial printer)
-                   client (.connect mqtt (str "mqtts://" (:host printer) ":8883") opts)
-                   timer (js/setTimeout (fn [] (.end client true) (resolve (error :printer/timeout "MQTT connect timed out."))) 12000)
+                   client (.connect mqtt (str "mqtts://" (:host printer) ":" port) opts)
                    done (atom false)
+                   timer (js/setTimeout (fn [] (.end client true) (swap! sessions dissoc serial)
+                                             (when (compare-and-set! done false true)
+                                               (resolve (error :printer/timeout "MQTT connect timed out.")))) 12000)
                    finish (fn [result] (when (compare-and-set! done false true)
                                          (js/clearTimeout timer) (resolve result)))]
                (swap! sessions assoc serial {:client client :report nil})
@@ -93,7 +95,7 @@
                            (let [start (.now js/Date)]
                              (letfn [(poll [] (let [observation (get-in @sessions [(:serial printer) :report])]
                                                 (cond
-                                                  (and observation (> (:observed-at observation) start)) (resolve {:ok observation})
+                                                  (and observation (>= (:observed-at observation) start)) (resolve {:ok observation})
                                                   (> (- (.now js/Date) start) 10000) (resolve (error :printer/timeout "Fresh MQTT report timed out."))
                                                   :else (js/setTimeout poll 25))))]
                                (poll)))))))))
@@ -110,28 +112,28 @@
     (js/Promise.resolve {:ok {:closed true}})))
 
 (defn link
-  "Construct a single-owner MQTT adapter with per-serial TLS certificate pins."
-  [pins insecure?]
-  (->CljsLink (atom {}) pins insecure?))
+  "Construct a single-owner MQTT adapter with per-serial TLS certificate pins. Optional port is for fake-server conformance."
+  ([pins insecure?] (link pins insecure? 8883))
+  ([pins insecure? port] (->CljsLink (atom {}) pins insecure? port)))
 (m/=> link [:=> [:cat :any boolean?] :any])
 
-(defn- with-ftp [printer pins insecure? action]
+(defn- with-ftp [printer pins insecure? port action]
   (if-let [code (secret (:access-code printer))]
-    (let [client (ftp/Client.)]
-      (-> (.access client #js {:host (:host printer) :port 990 :user "bblp" :password code
-                               :secure "implicit" :secureOptions (tls-options printer pins insecure? 990)})
+    (let [client (ftp/Client. 10000)]
+      (-> (.access client #js {:host (:host printer) :port port :user "bblp" :password code
+                               :secure "implicit" :secureOptions (tls-options printer pins insecure? port)})
           (.then (fn [] (action client)))
           (.then (fn [result] (if (:error result) result {:ok result})))
           (.catch (fn [_] (error :printer/ftps-failed "Check implicit FTPS 990, TLS pin and basic-ftp compatibility; no curl fallback.")))
           (.finally (fn [] (.close client)))))
     (js/Promise.resolve (error :printer/missing-secret "Provide a readable access-code secret reference."))))
 
-(defrecord CljsFiles [pins insecure?]
+(defrecord CljsFiles [pins insecure? port]
   port/FileStore
   (list [_ printer path]
-    (with-ftp printer pins insecure? (fn [client] (.list client path))))
+    (with-ftp printer pins insecure? port (fn [client] (.list client path))))
   (upload! [_ printer source destination]
-    (with-ftp printer pins insecure?
+    (with-ftp printer pins insecure? port
       (fn [client]
         (-> (.size client destination)
             (.then (fn [_] {:error {:kind :printer/path-exists :hint "Choose a new upload destination."}}))
@@ -140,7 +142,7 @@
                         (-> (.uploadFrom client source destination) (.then (fn [_] {:uploaded true})))
                         (js/Promise.reject err))))))))
   (download [_ printer source]
-    (with-ftp printer pins insecure?
+    (with-ftp printer pins insecure? port
       (fn [client]
         (let [chunks (atom [])
               total (atom 0)
@@ -153,9 +155,9 @@
               (.then (fn [_] (js/Buffer.concat (clj->js @chunks) @total)))))))))
 
 (defn files
-  "Construct a basic-ftp implicit-FTPS adapter; failures never invoke curl."
-  [pins insecure?]
-  (->CljsFiles pins insecure?))
+  "Construct a basic-ftp implicit-FTPS adapter; failures never invoke curl. Optional port is for fake-server conformance."
+  ([pins insecure?] (files pins insecure? 990))
+  ([pins insecure? port] (->CljsFiles pins insecure? port)))
 (m/=> files [:=> [:cat :any boolean?] :any])
 
 (defrecord CljsCamera [pins insecure? max-bytes]

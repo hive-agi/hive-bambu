@@ -4,28 +4,35 @@
   (:require [hive-bambu.printer.cljs-adapter :as adapter]
             [hive-bambu.printer.port :as port]))
 
-(defn ^:export exercise [printer-json]
-  (let [printer (js->clj printer-json :keywordize-keys true)
+(defn ^:export exercise [printer-json mqtt-port ftp-port]
+  (let [printer (update-in (js->clj printer-json :keywordize-keys true) [:access-code :scheme] keyword)
         pins (atom {})
-        link (adapter/link pins true)
-        files (adapter/files pins true)]
+        link (adapter/link pins true mqtt-port)
+        files (adapter/files pins true ftp-port)
+        topic (str "device/" (:serial printer) "/request")
+        results (atom {})
+        capture (fn [key value] (swap! results assoc key value))]
     (-> (port/connect! link printer)
         (.then (fn [connected]
-                 (-> (port/connect! link printer)
-                     (.then (fn [duplicate]
-                              (-> (port/send! link printer
-                                              {:topic (str "device/" (:serial printer) "/request")
-                                               :payload {:print {:command "pause" :sequence_id "1"}}})
-                                  (.then (fn [published]
-                                           (-> (port/report link printer)
-                                               (.then (fn [report]
-                                                        (-> (port/list files printer "/")
-                                                            (.then (fn [listing]
-                                                                     (-> (port/close! link printer)
-                                                                         (.then (fn [closed]
-                                                                                  #js {:connected (boolean (:ok connected))
-                                                                                       :duplicate (name (get-in duplicate [:error :kind]))
-                                                                                       :published (boolean (get-in published [:ok :published]))
-                                                                                       :state (get-in report [:ok :print :gcode_state])
-                                                                                       :listing (count (:ok listing))
-                                                                                       :closed (boolean (:ok closed))}))))))))))))))))))))
+                 (capture :connected (boolean (:ok connected)))
+                 (port/connect! link printer)))
+        (.then (fn [duplicate]
+                 (capture :duplicate (str (get-in duplicate [:error :kind])))
+                 (port/send! link printer {:topic topic :payload {:print {:command "pause" :sequence_id "1"}}})))
+        (.then (fn [published]
+                 (capture :published (boolean (get-in published [:ok :published])))
+                 (port/report link printer)))
+        (.then (fn [report]
+                 (capture :state (get-in report [:ok :print :gcode_state]))
+                 (port/list files printer "/")))
+        (.then (fn [listing]
+                 (capture :listing (count (:ok listing)))
+                 (capture :listing-error (str (get-in listing [:error :kind])))
+                 (port/download files printer "/existing.gcode")))
+        (.then (fn [downloaded]
+                 (capture :download (when-let [bytes (:ok downloaded)] (.toString bytes)))
+                 (capture :download-error (str (get-in downloaded [:error :kind])))
+                 (port/close! link printer)))
+        (.then (fn [closed]
+                 (capture :closed (boolean (:ok closed)))
+                 (clj->js @results))))))
