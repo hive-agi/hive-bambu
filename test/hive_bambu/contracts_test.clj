@@ -9,6 +9,7 @@
             [hive-bambu.ports]
             [hive-bambu.slicer.domain]
             [hive-bambu.slicer.port]
+            [hive-bambu.slicer.settings]
             [hive-bambu.slicer.flatpak]))
 
 (defn source-defns [file]

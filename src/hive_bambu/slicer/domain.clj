@@ -7,7 +7,7 @@
 
 (def ModelArtifact [:map [:path string?] [:format [:enum :stl :3mf :obj :step]] [:sha256 string?] [:bytes pos-int?]])
 (def SlicePreset [:map [:printer string?] [:process string?] [:filament string?] [:plate {:optional true} nat-int?] [:bed-type {:optional true} string?]])
-(def SettingOverrides [:map [:layer_height {:optional true} [:and number? [:fn #(<= 0.05 % 0.5)]]] [:initial_layer_print_height {:optional true} [:and number? [:fn #(<= 0.05 % 0.5)]]] [:wall_loops {:optional true} [:int {:min 0 :max 20}]] [:top_shell_layers {:optional true} [:int {:min 0 :max 20}]] [:bottom_shell_layers {:optional true} [:int {:min 0 :max 20}]] [:sparse_infill_density {:optional true} [:and number? [:fn #(<= 0 % 100)]]] [:enable_support {:optional true} boolean?] [:outer_wall_speed {:optional true} [:and number? pos?]] [:inner_wall_speed {:optional true} [:and number? pos?]] [:nozzle_temperature {:optional true} [:int {:min 0 :max 400}]] [:bed_temperature {:optional true} [:int {:min 0 :max 150}]] [:filament_type {:optional true} string?] [:raw {:optional true} [:map-of string? :any]]])
+(def SettingOverrides [:map {:closed false} [:raw {:optional true} [:map-of string? :any]]])
 (def SliceRequest [:map [:model ModelArtifact] [:preset SlicePreset] [:overrides {:optional true} SettingOverrides]])
 (def SliceResult [:map [:outputs [:vector [:map [:path string?] [:format [:enum :gcode-3mf :gcode]]]]] [:estimate [:map [:print-seconds [:maybe number?]] [:filament-g [:maybe number?]] [:filament-m [:maybe number?]]]] [:warnings [:vector string?]]])
 

@@ -4,6 +4,7 @@
             [clojure.string :as str]
             [malli.core :as m]
             [hive-bambu.slicer.domain :as domain]
+            [hive-bambu.slicer.settings :as settings]
             [hive-bambu.slicer.port :as port])
   (:import [java.io File]
            [java.nio.file Files]
@@ -60,10 +61,14 @@
   (try
     (with-open [zip (ZipFile. ^File archive)]
       (let [entry (.getEntry zip "Metadata/slice_info.config")
-            text (when entry (with-open [stream (.getInputStream zip entry)] (slurp stream)))]
-        {:print-seconds (some-> (re-find #"(?:prediction|estimated_time)=\"([0-9.]+)\"" (or text "")) second Double/parseDouble)
-         :filament-g (some-> (re-find #"(?:weight|filament_weight)=\"([0-9.]+)\"" (or text "")) second Double/parseDouble)
-         :filament-m (some-> (re-find #"(?:used_m|filament_used_m)=\"([0-9.]+)\"" (or text "")) second Double/parseDouble)}))
+            text (when entry (with-open [stream (.getInputStream zip entry)] (slurp stream)))
+            metadata (when text (re-seq #"<metadata key=\"([^\"]+)\" value=\"([^\"]*)\"" text))
+            filament (when text (re-find #"<filament [^>]*used_m=\"([^\"]*)\" used_g=\"([^\"]*)\"" text))
+            attrs (into {} (map (fn [[_ k v]] [k v]) metadata))
+            number (fn [v] (when (and v (not (empty? v))) (Double/parseDouble v)))]
+        {:print-seconds (number (get attrs "prediction"))
+         :filament-g (number (nth filament 2 nil))
+         :filament-m (number (nth filament 1 nil))}))
     (catch Exception _ {:print-seconds nil :filament-g nil :filament-m nil})))
 
 (defn- profile-path [root kind name]
@@ -77,25 +82,35 @@
     (cond
       (not (domain/valid-request? request)) {:error {:type :slicer/invalid-model}}
       (:error (availability)) (availability)
+      (not (settings/valid-overrides? (or (:overrides request) {}))) {:error {:type :slicer/invalid-settings}}
       :else
       (let [root (profile-root)
             {:keys [printer process filament plate]} (:preset request)
-            paths (mapv #(profile-path root %1 %2) ["machine" "process" "filament"] [printer process filament])]
-        (if (some nil? paths)
+            names [printer process filament]
+            host-paths (mapv #(profile-path root %1 %2) ["machine" "process" "filament"] names)
+            container-paths (mapv #(str "/app/share/BambuStudio/profiles/BBL/" %1 "/" %2)
+                                  ["machine" "process" "filament"] names)]
+        (if (some nil? host-paths)
           {:error {:type :slicer/failed :message "Stock profile not found" :preset (:preset request)}}
           (let [out (io/file output-root (str (java.util.UUID/randomUUID)))
                 _ (Files/createDirectories (.toPath out) (make-array java.nio.file.attribute.FileAttribute 0))
                 archive (io/file out "output.gcode.3mf")
+                derived (when (seq (:overrides request))
+                          (settings/derive-profiles! (second host-paths) (last host-paths) out (:overrides request)))
+                setting-paths (if derived
+                                [(first container-paths) (get-in derived [:ok :process]) (get-in derived [:ok :filament])]
+                                container-paths)
                 args ["flatpak" "run" "--command=bambu-studio" app-id
-                      (str "--load-settings=" (str/join ";" (take 2 paths)))
-                      (str "--load-filaments=" (last paths))
+                      (str "--load-settings=" (str/join ";" (take 2 setting-paths)))
+                      (str "--load-filaments=" (last setting-paths))
                       (str "--outputdir=" (.getAbsolutePath out))
                       (str "--slice=" (or plate 0))
-                      (str "--export-3mf=" (.getAbsolutePath archive))
+                      "--export-3mf=output.gcode.3mf"
                       (get-in request [:model :path])]
                 start (System/nanoTime)
-                result (run-process args timeout-ms)]
+                result (when-not (:error derived) (run-process args timeout-ms))]
             (cond
+              (:error derived) derived
               (:timeout? result) {:error {:type :slicer/timeout :output-dir (.getAbsolutePath out)}}
               (not (zero? (:exit result))) {:error {:type :slicer/failed :exit (:exit result) :stderr (:stderr result) :output-dir (.getAbsolutePath out)}}
               (not (.isFile archive)) {:error {:type :slicer/failed :message "CLI exited successfully but archive is absent" :output-dir (.getAbsolutePath out)}}
