@@ -1,0 +1,9 @@
+{:missing
+ {:error
+  {:kind :bambu/no-transport,
+   :hint
+   "No printer transport configured. Supply a PrinterTransport adapter; wave one ships only a test stub."}},
+ :unknown
+ {:error
+  {:kind :bambu/unknown-command,
+   :hint "Choose catalog, doctor or call."}}}

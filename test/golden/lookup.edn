@@ -1,0 +1,6 @@
+{:found {:ok {:name "pause"}},
+ :unknown
+ {:error
+  {:kind :bambu/unknown-command,
+   :hint
+   "Unknown command \"nope\". Run bambu catalog to see supported names."}}}

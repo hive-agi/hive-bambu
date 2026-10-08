@@ -1,0 +1,8 @@
+{:call
+ {:isError false :content [{:type "text" :text "{:accepted true}"}]},
+ :unknown
+ {:isError true,
+  :content
+  [{:type "text",
+    :text
+    "{:kind :bambu/unknown-command, :hint \"Choose catalog, doctor or call.\"}"}]}}
