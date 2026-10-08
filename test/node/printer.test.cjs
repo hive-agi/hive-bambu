@@ -39,21 +39,26 @@ test('fake camera frames enforce advertised cap and JPEG markers', {timeout:1000
       if (sent) return;
       sent = true;
       assert.equal(auth.length,80);
-      const jpeg = Buffer.from([255,216,255,217]);
+      const jpeg = Buffer.from(invalidMarkers ? [0,216,255,217] : [255,216,255,217]);
       const header = Buffer.alloc(16);
       header.writeUInt32LE(oversized ? 1025 : jpeg.length,12);
       socket.end(Buffer.concat([header,jpeg]));
     });
   });
   let oversized = false;
+  let invalidMarkers = false;
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
   try {
     const ok = await exerciseCamera(printer,server.address().port);
-    assert.ok(ok && ok.get && ok.get('ok'), JSON.stringify(ok));
-    assert.deepEqual([...ok.get('ok')],[255,216,255,217]);
+    assert.ok(ok && Buffer.isBuffer(ok.ok), JSON.stringify(ok));
+    assert.deepEqual([...ok.ok],[255,216,255,217]);
     oversized = true;
     const refused = await exerciseCamera(printer,server.address().port);
     assert.equal(refused.error.kind,':printer/camera-size');
+    oversized = false;
+    invalidMarkers = true;
+    const invalid = await exerciseCamera(printer,server.address().port);
+    assert.equal(invalid.error.kind,':printer/invalid-jpeg');
   } finally {
     await new Promise(resolve=>server.close(resolve));
     await ftp.close();
