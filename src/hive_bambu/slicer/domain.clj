@@ -8,7 +8,7 @@
 (def ModelArtifact [:map [:path string?] [:format [:enum :stl :3mf :obj :step]] [:sha256 string?] [:bytes pos-int?]])
 (def SlicePreset [:map [:printer string?] [:process string?] [:filament string?] [:plate {:optional true} nat-int?] [:bed-type {:optional true} string?]])
 (def SettingOverrides [:map {:closed false} [:raw {:optional true} [:map-of string? :any]]])
-(def SliceRequest [:map [:model ModelArtifact] [:preset SlicePreset] [:overrides {:optional true} SettingOverrides]])
+(def SliceRequest [:map [:model ModelArtifact] [:preset SlicePreset] [:scale {:optional true} [:and number? [:fn #(and (Double/isFinite (double %)) (< 0 %) (<= % 50))]]] [:arrange {:optional true} boolean?] [:overrides {:optional true} SettingOverrides]])
 (def SliceResult [:map [:outputs [:vector [:map [:path string?] [:format [:enum :gcode-3mf :gcode]]]]] [:estimate [:map [:print-seconds [:maybe number?]] [:filament-g [:maybe number?]] [:filament-m [:maybe number?]]]] [:warnings [:vector string?]]])
 
 (defn artifact

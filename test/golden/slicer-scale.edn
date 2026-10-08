@@ -1,0 +1,5 @@
+{:max true,
+ :min true,
+ :too-big false,
+ :wrong-arrange false,
+ :zero false}

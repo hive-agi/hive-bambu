@@ -123,7 +123,7 @@
 (defn default-tool
   "Construct a Flatpak-backed tool with fresh output directories."
   []
-  (tool (flatpak/adapter (str (System/getProperty "user.home") "/.cache/hive-craft-bambu/out") 180000)))
+  (tool (flatpak/adapter (str (System/getProperty "user.home") "/.cache/hive-bambu/out") 180000)))
 (m/=> default-tool [:=> [:cat] map?])
 (m/=> tool [:=> [:cat :any] map?])
 (m/=> command [:=> [:cat :any map?] map?])
