@@ -4,5 +4,5 @@
                         :output-to "target/portability.js"
                         :main hive-bambu.portability/main}
           :printer {:target :node-library :output-to "target/printer.js" :exports {:link hive-bambu.printer.cljs-adapter/link :files hive-bambu.printer.cljs-adapter/files :camera hive-bambu.printer.cljs-adapter/camera}}
-          :printer-test {:target :node-library :output-to "target/printer-test.js" :exports {:exercise hive-bambu.printer-node-test/exercise}}
+          :printer-test {:target :node-library :output-to "target/printer-test.js" :exports {:exercise hive-bambu.printer-node-test/exercise :exerciseCamera hive-bambu.printer-node-test/exercise-camera}}
           :schema-probe {:target :node-library :output-to "target/schema-probe.js" :exports {:probe hive-bambu.schema-probe/probe}}}}

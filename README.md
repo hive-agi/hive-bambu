@@ -20,6 +20,19 @@ The portable core returns `{:ok value}` or `{:error {:kind ... :hint ...}}`: sli
 
 Present transport: **test-only in-memory stub**. Planned, not implemented: `:python` via libpython-clj/paho-mqtt; `:cljs` via native npm imports (`mqtt`, `basic-ftp`); `:cljrs` via Rust cdylib MQTT/TLS; `:slicer` via an in-process C ABI (`hive_call`/`hive_free`) linking libslic3r built from source. No Python or Rust shell-outs; no direct dependency on `hive-mcp`.
 
+## Host config
+
+In hive-mcp's `~/.config/hive-mcp/config.edn`, configure the required safety gate under `:addons`:
+
+```edn
+{:addons {"hive.bambu" {:print-gate {:require-confirm true
+                                      :max-report-age-ms 15000
+                                      :nozzle-max-c 300
+                                      :bed-max-c 120}}}}
+```
+
+An absent or invalid `:print-gate` refuses mount; an injected `PrintGate` record is also accepted. The Flatpak slicer writes to `~/.cache/hive-bambu/out` by default and refuses `/tmp` roots.
+
 ## Verification
 
 ```sh

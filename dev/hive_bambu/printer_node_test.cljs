@@ -42,3 +42,12 @@
         (.then (fn [closed]
                  (capture :closed (boolean (:ok closed)))
                  (clj->js @results))))))
+
+(defn ^:export exercise-camera [printer-json port]
+  (let [printer (update-in (js->clj printer-json :keywordize-keys true) [:access-code :scheme] keyword)
+        camera (adapter/camera (atom {}) true 1024 port)]
+    (-> (port/snapshot camera (assoc printer :host "127.0.0.1"))
+        (.then (fn [result]
+                 (if-let [bytes (:ok result)]
+                   #js {:ok bytes}
+                   #js {:error #js {:kind (str (get-in result [:error :kind]))}}))))))

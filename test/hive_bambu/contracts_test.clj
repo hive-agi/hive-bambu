@@ -11,7 +11,9 @@
             [hive-bambu.slicer.domain]
             [hive-bambu.slicer.port]
             [hive-bambu.slicer.settings]
-            [hive-bambu.slicer.flatpak]))
+            [hive-bambu.slicer.flatpak]
+            [hive-bambu.slicer.show]
+            [hive-bambu.slicer.estimate]))
 
 (defn source-defns [file]
   (let [contents (slurp file)
