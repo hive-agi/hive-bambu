@@ -3,6 +3,7 @@
   (:require [clojure.java.io :as io]
             [clojure.string :as str]
             [malli.core :as m]
+            [hive-bambu.slicer.estimate :as estimate]
             [hive-bambu.slicer.domain :as domain]
             [hive-bambu.slicer.settings :as settings]
             [hive-bambu.slicer.port :as port])
@@ -57,30 +58,32 @@
     (availability)))
 (m/=> presets [:=> [:cat] map?])
 
-(defn- estimate [archive]
-  (try
-    (with-open [zip (ZipFile. ^File archive)]
-      (let [entry (.getEntry zip "Metadata/slice_info.config")
-            text (when entry (with-open [stream (.getInputStream zip entry)] (slurp stream)))
-            metadata (when text (re-seq #"<metadata key=\"([^\"]+)\" value=\"([^\"]*)\"" text))
-            filament (when text (re-find #"<filament [^>]*used_m=\"([^\"]*)\" used_g=\"([^\"]*)\"" text))
-            attrs (into {} (map (fn [[_ k v]] [k v]) metadata))
-            number (fn [v] (when (and v (not (empty? v))) (Double/parseDouble v)))]
-        {:print-seconds (number (get attrs "prediction"))
-         :filament-g (number (nth filament 2 nil))
-         :filament-m (number (nth filament 1 nil))}))
-    (catch Exception _ {:print-seconds nil :filament-g nil :filament-m nil})))
 
 (defn- profile-path [root kind name]
   (let [file (io/file root kind name)]
     (when (and (.isFile file) (= (.getCanonicalFile (.getParentFile file)) (.getCanonicalFile (io/file root kind))))
       (.getAbsolutePath file))))
 
+(defn valid-output-root
+  "Refuse roots within host temporary directories, which Flatpak isolates from the slicer."
+  [root]
+  (try
+    (let [path (.toPath (.getCanonicalFile (io/file root)))
+          temp (.toPath (.getCanonicalFile (io/file (System/getProperty "java.io.tmpdir"))))
+          unix-temp (.toPath (.getCanonicalFile (io/file "/tmp")))]
+      (if (or (.startsWith path temp) (.startsWith path unix-temp))
+        {:error {:type :slicer/invalid-output-root :root (str path)
+                 :reason "Flatpak has a private /tmp; choose a persistent output root outside java.io.tmpdir."}}
+        {:ok (str path)}))
+    (catch Exception e {:error {:type :slicer/invalid-output-root :root (str root) :reason (.getMessage e)}})))
+(m/=> valid-output-root [:=> [:cat :any] map?])
+
 (defrecord FlatpakCliSlicer [output-root timeout-ms]
   port/Slicer
   (slice! [_ request]
     (cond
       (not (domain/valid-request? request)) {:error {:type :slicer/invalid-model}}
+      (:error (valid-output-root output-root)) (valid-output-root output-root)
       (:error (availability)) (availability)
       (not (settings/valid-overrides? (or (:overrides request) {}))) {:error {:type :slicer/invalid-settings}}
       :else
@@ -100,13 +103,15 @@
                 setting-paths (if derived
                                 [(first container-paths) (get-in derived [:ok :process]) (get-in derived [:ok :filament])]
                                 container-paths)
-                args ["flatpak" "run" "--command=bambu-studio" app-id
-                      (str "--load-settings=" (str/join ";" (take 2 setting-paths)))
-                      (str "--load-filaments=" (last setting-paths))
-                      (str "--outputdir=" (.getAbsolutePath out))
-                      (str "--slice=" (or plate 0))
-                      "--export-3mf=output.gcode.3mf"
-                      (get-in request [:model :path])]
+                args (into ["flatpak" "run" "--command=bambu-studio" app-id
+                            (str "--load-settings=" (str/join ";" (take 2 setting-paths)))
+                            (str "--load-filaments=" (last setting-paths))
+                            (str "--outputdir=" (.getAbsolutePath out))
+                            (str "--slice=" (or plate 0))
+                            "--export-3mf=output.gcode.3mf"]
+                           (concat (when-let [scale (:scale request)] [(str "--scale=" scale)])
+                                   (when (true? (:arrange request)) ["--arrange=1"])
+                                   [(get-in request [:model :path])]))
                 start (System/nanoTime)
                 result (when-not (:error derived) (run-process args timeout-ms))]
             (cond
@@ -115,7 +120,7 @@
               (not (zero? (:exit result))) {:error {:type :slicer/failed :exit (:exit result) :stderr (:stderr result) :output-dir (.getAbsolutePath out)}}
               (not (.isFile archive)) {:error {:type :slicer/failed :message "CLI exited successfully but archive is absent" :output-dir (.getAbsolutePath out)}}
               :else {:ok {:outputs [{:path (.getAbsolutePath archive) :format :gcode-3mf :bytes (.length archive)}]
-                         :estimate (estimate archive) :warnings [] :wall-ms (long (/ (- (System/nanoTime) start) 1000000))}})))))))
+                         :estimate (estimate/from-archive archive) :warnings [] :wall-ms (long (/ (- (System/nanoTime) start) 1000000))}})))))))
 
 (defn adapter
   "Construct the Flatpak adapter with an output root and finite timeout."
