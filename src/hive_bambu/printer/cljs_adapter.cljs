@@ -160,13 +160,13 @@
   ([pins insecure? port] (->CljsFiles pins insecure? port)))
 (m/=> files [:=> [:cat :any boolean?] :any])
 
-(defrecord CljsCamera [pins insecure? max-bytes]
+(defrecord CljsCamera [pins insecure? max-bytes port]
   port/Camera
   (snapshot [_ printer]
     (if-let [code (secret (:access-code printer))]
       (js/Promise.
        (fn [resolve _]
-         (let [socket (tls/connect (tls-options printer pins insecure? 6000))
+         (let [socket (tls/connect (tls-options printer pins insecure? port))
                done (atom false)
                finish (fn [value] (when (compare-and-set! done false true)
                                     (.destroy socket) (resolve value)))
@@ -210,7 +210,8 @@
 
 (defn camera
   "Construct a camera adapter with an explicit maximum JPEG byte length."
-  [pins insecure? max-bytes]
-  (when (and (integer? max-bytes) (<= 4 max-bytes 10485760))
-    (->CljsCamera pins insecure? max-bytes)))
+  ([pins insecure? max-bytes] (camera pins insecure? max-bytes 6000))
+  ([pins insecure? max-bytes port]
+   (when (and (integer? max-bytes) (<= 4 max-bytes 10485760))
+     (->CljsCamera pins insecure? max-bytes port))))
 (m/=> camera [:=> [:cat :any boolean? :int] [:maybe :any]])
