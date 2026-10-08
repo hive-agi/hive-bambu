@@ -67,17 +67,19 @@
   (addon-id [_] "hive.bambu")
   (addon-type [_] :external)
   (capabilities [_] #{:tools :health-reporting})
-  (initialize! [_ _]
-    (if (satisfies? gate/PrintGate (:print-gate config))
-      (do (reset! state :ready) {:success? true :errors []})
-      {:success? false :errors [{:kind :printer/missing-gate
-                                 :hint "Install a PrintGate before mounting the Bambu addon."}]}))
+  (initialize! [_ cfg]
+    (let [policy (if (contains? cfg :print-gate) (:print-gate cfg) (:print-gate config))
+          print-gate (if (satisfies? gate/PrintGate policy) policy (gate/config-gate policy))]
+      (if print-gate
+        (do (reset! state {:gate print-gate}) {:success? true :errors []})
+        {:success? false :errors [{:kind :printer/missing-gate
+                                   :hint "Invalid or missing :print-gate; supply a PrintGate or {:require-confirm true :max-report-age-ms 15000 :nozzle-max-c 300 :bed-max-c 120}."}]})))
   (shutdown! [_] (reset! state :down) nil)
-  (tools [_] (if (= @state :ready) [(tool (:transport config)) (slicer/default-tool)] []))
+  (tools [_] (if (map? @state) [(tool (:transport config)) (slicer/default-tool)] []))
   (schema-extensions [_] {})
   (excluded-tools [_] #{})
   (hooks [_] {})
-  (health [_] {:status (if (= @state :ready) :degraded :down)
+  (health [_] {:status (if (map? @state) :degraded :down)
                :details (doctor)}))
 
 (defn addon-ctor

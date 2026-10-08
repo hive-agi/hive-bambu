@@ -52,36 +52,37 @@
 (defn gcode-check
   "Refuse blocked commands and excessive temperature settings.
    Safety tokens are supplied from extracted data; malformed lines fail closed."
-  [blocked line]
-  (let [upper (when (string? line) (str/upper-case (str/trim line)))
-        parts (when upper (remove empty? (loop [chars (seq upper) token "" result []]
-                                           (if-let [ch (first chars)]
-                                             (if (contains? #{\space \tab \newline \return \formfeed} ch)
-                                               (recur (next chars) "" (conj result token))
-                                               (recur (next chars) (str token ch) result))
-                                             (conj result token)))))
-        opcode (first parts)
-        param (second parts)
-        temp? (contains? #{"M104" "M109" "M140"} opcode)
-        digits (when (and (string? param) (str/starts-with? param "S")) (subs param 1))
-        number (when (and (seq digits) (< (count digits) 8)
-                          (every? #(<= (int \0) (int %) (int \9)) digits))
-                 (reduce (fn [n ch] (+ (* n 10) (- (int ch) (int \0)))) 0 digits))]
-    (cond
-      (or (not (string? line)) (str/blank? line) (str/includes? line "\n")
-          (str/includes? line "\r") (str/includes? line ";"))
-      (refusal :bambu/invalid-gcode "Provide one nonempty G-code line, without comments or line breaks.")
-      (some #(str/starts-with? opcode %) blocked)
-      (refusal :bambu/blocked-gcode (str opcode " is blocked for safety; use the dedicated printer control instead."))
-      (or (not (string? opcode)) (< (count opcode) 2)
-          (not (contains? #{\G \M} (first opcode)))
-          (not (every? #(<= (int \0) (int %) (int \9)) (subs opcode 1))))
-      (refusal :bambu/invalid-gcode "Provide a single G- or M-code followed by numeric digits.")
-      (and temp? (nil? number))
-      (refusal :bambu/invalid-temperature "Temperature commands require an integer S parameter (at most 7 digits).")
-      (and temp? (> number (if (= opcode "M140") 120 300)))
-      (refusal :bambu/unsafe-temperature "Temperature exceeds the nozzle (300 C) or bed (120 C) limit.")
-      :else {:ok (str/trim line)})))
+  ([blocked line] (gcode-check blocked line 300 120))
+  ([blocked line nozzle-max-c bed-max-c]
+   (let [upper (when (string? line) (str/upper-case (str/trim line)))
+         parts (when upper (remove empty? (loop [chars (seq upper) token "" result []]
+                                            (if-let [ch (first chars)]
+                                              (if (contains? #{\space \tab \newline \return \formfeed} ch)
+                                                (recur (next chars) "" (conj result token))
+                                                (recur (next chars) (str token ch) result))
+                                              (conj result token)))))
+         opcode (first parts)
+         param (second parts)
+         temp? (contains? #{"M104" "M109" "M140"} opcode)
+         digits (when (and (string? param) (str/starts-with? param "S")) (subs param 1))
+         number (when (and (seq digits) (< (count digits) 8)
+                           (every? #(<= (int \0) (int %) (int \9)) digits))
+                  (reduce (fn [n ch] (+ (* n 10) (- (int ch) (int \0)))) 0 digits))]
+     (cond
+       (or (not (string? line)) (str/blank? line) (str/includes? line "\n")
+           (str/includes? line "\r") (str/includes? line ";"))
+       (refusal :bambu/invalid-gcode "Provide one nonempty G-code line, without comments or line breaks.")
+       (some #(str/starts-with? opcode %) blocked)
+       (refusal :bambu/blocked-gcode (str opcode " is blocked for safety; use the dedicated printer control instead."))
+       (or (not (string? opcode)) (< (count opcode) 2)
+           (not (contains? #{\G \M} (first opcode)))
+           (not (every? #(<= (int \0) (int %) (int \9)) (subs opcode 1))))
+       (refusal :bambu/invalid-gcode "Provide a single G- or M-code followed by numeric digits.")
+       (and temp? (nil? number))
+       (refusal :bambu/invalid-temperature "Temperature commands require an integer S parameter (at most 7 digits).")
+       (and temp? (> number (if (= opcode "M140") bed-max-c nozzle-max-c)))
+       (refusal :bambu/unsafe-temperature (str "Temperature exceeds the nozzle (" nozzle-max-c " C) or bed (" bed-max-c " C) limit."))
+       :else {:ok (str/trim line)}))))
 
 (defn mqtt-request
   "Build a data-only MQTT publication. Transport handles JSON and signing.
