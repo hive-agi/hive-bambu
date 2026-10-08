@@ -12,12 +12,14 @@
 (defrecord FlatpakGui []
   GuiProcess
   (launch! [_ path]
-    (try
-      (let [process (.start (ProcessBuilder. ^java.util.List ["flatpak" "run" "--die-with-parent" "com.bambulab.BambuStudio" path]))]
-        (if (.waitFor process 1500 TimeUnit/MILLISECONDS)
-          {:error {:type :slicer/show-failed :reason (str "BambuStudio exited at start: " (.exitValue process))}}
-          {:ok process}))
-      (catch Exception e {:error {:type :slicer/show-failed :reason (.getMessage e)}})))
+    (if (nil? (System/getenv "DISPLAY"))
+      {:error {:type :slicer/show-unavailable :reason "DISPLAY is unset; open a graphical session."}}
+      (try
+        (let [process (.start (ProcessBuilder. ^java.util.List ["flatpak" "run" "--die-with-parent" "com.bambulab.BambuStudio" path]))]
+          (if (.waitFor process 1500 TimeUnit/MILLISECONDS)
+            {:error {:type :slicer/show-failed :reason (str "BambuStudio exited at start: " (.exitValue process))}}
+            {:ok process}))
+        (catch Exception e {:error {:type :slicer/show-failed :reason (.getMessage e)}}))))
   (close! [_ token]
     (if (and (instance? Process token) (.isAlive ^Process token))
       (do (.destroy ^Process token)
@@ -59,18 +61,17 @@
 (defn show!
   "Close the previously owned GUI and show a sliced 3mf; never touch unowned processes."
   [viewer path]
-  (cond
-    (not (sliced-archive? path)) {:error {:type :slicer/invalid-archive :path (str path)}}
-    (nil? (System/getenv "DISPLAY")) {:error {:type :slicer/show-unavailable :reason "DISPLAY is unset; open a graphical session."}}
-    :else (locking (:owned viewer)
-            (let [old @(:owned viewer)
-                  closed (if old (close! (:gui viewer) old) {:ok true})]
-              (if (:error closed)
-                closed
-                (do (reset! (:owned viewer) nil)
-                    (let [started (launch! (:gui viewer) (.getCanonicalPath (io/file path)))]
-                      (if-let [token (:ok started)]
-                        (do (reset! (:owned viewer) token)
-                            {:ok {:path (.getCanonicalPath (io/file path)) :pid (if (instance? Process token) (.pid ^Process token) nil)}})
-                        started))))))))
+  (if-not (sliced-archive? path)
+    {:error {:type :slicer/invalid-archive :path (str path)}}
+    (locking (:owned viewer)
+      (let [old @(:owned viewer)
+            closed (if old (close! (:gui viewer) old) {:ok true})]
+        (if (:error closed)
+          closed
+          (do (reset! (:owned viewer) nil)
+              (let [started (launch! (:gui viewer) (.getCanonicalPath (io/file path)))]
+                (if-let [token (:ok started)]
+                  (do (reset! (:owned viewer) token)
+                      {:ok {:path (.getCanonicalPath (io/file path)) :pid (if (instance? Process token) (.pid ^Process token) nil)}})
+                  started))))))))
 (m/=> show! [:=> [:cat :any :any] map?])
