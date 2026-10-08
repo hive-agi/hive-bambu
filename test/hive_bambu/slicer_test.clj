@@ -12,6 +12,13 @@
 
 (def fixture "test/fixtures/hive-geometry-slab.stl")
 (def out-root (str (System/getProperty "user.home") "/.cache/hive-bambu-test"))
+(defmacro live-or-skip
+  "Run a live flatpak slicer body, or print why it was skipped and assert the absence it relies on."
+  [& body]
+  `(if (:ok (flatpak/availability))
+     (do ~@body)
+     (do (println "SKIP: flatpak com.bambulab.BambuStudio absent; live slicer test not run")
+         (is (contains? (flatpak/availability) :error)))))
 (defn request []
   {:model (:ok (domain/artifact fixture))
    :preset {:printer "Bambu Lab X1 Carbon 0.4 nozzle.json"
@@ -31,12 +38,12 @@
   (port-conformance (port/stub)))
 
 (deftest flatpak-conformance
-  (when (:ok (flatpak/availability))
+  (live-or-skip
     (let [result (port-conformance (flatpak/adapter out-root 120000))]
       (is (or (:ok result) (:error result))))))
 
 (deftest stock-presets
-  (when (:ok (flatpak/availability))
+  (live-or-skip
     (is (some #{"Bambu Lab X1 Carbon 0.4 nozzle.json"} (get-in (flatpak/presets) [:ok :machine])))))
 
 (deftest facade-compare-and-export
@@ -56,7 +63,7 @@
                                   (System/getProperty "java.io.tmpdir")) [:error :type])))))
 
 (deftest flatpak-export-bundle
-  (when (:ok (flatpak/availability))
+  (live-or-skip
     (let [result (facade/export (flatpak/adapter out-root 180000)
                                 (request) (str out-root "/orders"))]
       (is (:ok result) (pr-str result))
@@ -68,7 +75,7 @@
         (is (number? (get-in bundle [:estimate :print-seconds])))))))
 
 (deftest flatpak-override-slice
-  (when (:ok (flatpak/availability))
+  (live-or-skip
     (let [result (port/slice! (flatpak/adapter out-root 180000)
                               (assoc (request) :overrides {:layer_height 0.28 :sparse_infill_density 30}))]
       (is (:ok result) (pr-str result))
@@ -78,7 +85,7 @@
         (is (.isFile (java.io.File. (.getParent (java.io.File. path)) "derived-filament.json")))))))
 
 (deftest flatpak-compare-variants
-  (when (:ok (flatpak/availability))
+  (live-or-skip
     (let [variants [{:layer_height 0.12 :sparse_infill_density 10}
                     {:layer_height 0.20 :sparse_infill_density 15}
                     {:layer_height 0.28 :sparse_infill_density 30}]
