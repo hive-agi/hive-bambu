@@ -6,7 +6,8 @@
             [hive-bambu.slicer.domain :as domain]
             [hive-bambu.slicer.flatpak :as flatpak]
             [hive-bambu.slicer.port :as port]
-            [hive-bambu.slicer.settings :as settings])
+            [hive-bambu.slicer.settings :as settings]
+            [hive-bambu.slicer.show :as show])
   (:import [java.io RandomAccessFile]
            [java.nio.file Files CopyOption]
            [java.util UUID]))
@@ -78,13 +79,15 @@
 
 (defn command
   "Dispatch the five local slicer tool operations through an injected port."
-  [s {:keys [command request variants output-root]}]
+  [s {:keys [command request variants output-root path viewer]}]
   (case command
     "slice" (port/slice! s request)
     "compare" (compare s request variants)
     "presets" (flatpak/presets)
     "settings" {:ok (settings/settings)}
     "export" (export s request output-root)
+    "show" (if viewer (show/show! viewer path)
+                 {:error {:type :slicer/show-unavailable :reason "Configure a GUI viewer before showing slices."}})
     {:error {:type :slicer/unknown-command :command command}}))
 
 (defn wire-request
@@ -101,29 +104,30 @@
 
 (defn tool
   "Project slicer operations into one tool with a closed command vocabulary."
-  [s]
-  {:name "bambu-slicer"
-   :description "Slice a model, compare settings, inspect presets/settings, or export a local print-order bundle."
-   :inputSchema {:type "object" :additionalProperties false
-                 :properties {"command" {:type "string" :enum ["slice" "compare" "presets" "settings" "export"]}
-                              "request" {:type "object"} "variants" {:type "array" :items {:type "object"}}
-                              "output-root" {:type "string"}}
-                 :required ["command"]}
-   :annotations {:readOnlyHint false :destructiveHint false}
-   :handler (fn [args]
-              (let [row (into {} (map (fn [[k v]] [(if (string? k) (keyword k) k) v])) args)
-                    row (cond-> row
-                          (:request row) (update :request wire-request)
-                          (:variants row) (update :variants #(mapv (fn [variant]
-                                                                    (into {} (map (fn [[k v]] [(if (string? k) (keyword k) k) v])) variant)) %)))
-                    outcome (command s row)]
-                {:isError (boolean (:error outcome))
-                 :content [{:type "text" :text (pr-str (or (:ok outcome) (:error outcome)))}]}))})
+  ([s] (tool s nil))
+  ([s viewer]
+   {:name "bambu-slicer"
+    :description "Slice a model, compare settings, inspect presets/settings, export a print-order bundle or show a sliced 3mf."
+    :inputSchema {:type "object" :additionalProperties false
+                  :properties {"command" {:type "string" :enum ["slice" "compare" "presets" "settings" "export" "show"]}
+                               "request" {:type "object"} "variants" {:type "array" :items {:type "object"}}
+                               "output-root" {:type "string"} "path" {:type "string"}}
+                  :required ["command"]}
+    :annotations {:readOnlyHint false :destructiveHint false}
+    :handler (fn [args]
+               (let [row (into {} (map (fn [[k v]] [(if (string? k) (keyword k) k) v])) args)
+                     row (cond-> row
+                           (:request row) (update :request wire-request)
+                           (:variants row) (update :variants #(mapv (fn [variant]
+                                                                     (into {} (map (fn [[k v]] [(if (string? k) (keyword k) k) v])) variant)) %)))
+                     outcome (command s (assoc row :viewer viewer))]
+                 {:isError (boolean (:error outcome))
+                  :content [{:type "text" :text (pr-str (or (:ok outcome) (:error outcome)))}]}))}))
 
 (defn default-tool
-  "Construct a Flatpak-backed tool with fresh output directories."
-  []
-  (tool (flatpak/adapter (str (System/getProperty "user.home") "/.cache/hive-bambu/out") 180000)))
-(m/=> default-tool [:=> [:cat] map?])
-(m/=> tool [:=> [:cat :any] map?])
+  "Construct a Flatpak-backed tool with fresh output directories and an optional GUI viewer."
+  ([] (default-tool nil))
+  ([viewer] (tool (flatpak/adapter (str (System/getProperty "user.home") "/.cache/hive-bambu/out") 180000) viewer)))
+(m/=> default-tool [:function [:=> [:cat] map?] [:=> [:cat :any] map?]])
+(m/=> tool [:function [:=> [:cat :any] map?] [:=> [:cat :any :any] map?]])
 (m/=> command [:=> [:cat :any map?] map?])
