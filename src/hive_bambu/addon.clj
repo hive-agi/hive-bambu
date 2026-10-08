@@ -7,7 +7,8 @@
             [malli.core :as m]
             [hive-bambu.schema :as schema]
             [hive-bambu.printer.gate :as gate]
-            [hive-bambu.printer.port :as printer-port]))
+            [hive-bambu.printer.port :as printer-port]
+            [hive-bambu.slicer.facade :as slicer]))
 
 (defn doctor
   "Diagnose packaged vocabulary and explicitly report unavailable live transports."
@@ -72,7 +73,7 @@
       {:success? false :errors [{:kind :printer/missing-gate
                                  :hint "Install a PrintGate before mounting the Bambu addon."}]}))
   (shutdown! [_] (reset! state :down) nil)
-  (tools [_] (if (= @state :ready) [(tool (:transport config))] []))
+  (tools [_] (if (= @state :ready) [(tool (:transport config)) (slicer/default-tool)] []))
   (schema-extensions [_] {})
   (excluded-tools [_] #{})
   (hooks [_] {})

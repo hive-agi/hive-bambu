@@ -13,7 +13,7 @@
         instance (bambu/addon-ctor {:transport printer :print-gate (gate/guard ["M112"])})]
     (is (= "hive.bambu" (addon/addon-id instance)))
     (is (:success? (addon/initialize! instance {})))
-    (is (= 1 (count (addon/tools instance))))
+    (is (= 2 (count (addon/tools instance))))
     (is (= 57 (get-in (bambu/doctor) [:catalog :slicer])))
     (is (= 17 (get-in (bambu/doctor) [:catalog :mqtt])))
     (is (= {:ok {:accepted true}}

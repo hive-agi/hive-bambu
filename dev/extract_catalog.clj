@@ -41,7 +41,7 @@
                 (recur (rest xs) active current rows))
               (cond-> rows current (conj current)))))) segments))))
 
-(let [source (slurp "/home/klein/PP/hive/clones-ref/BambuStudio/src/libslic3r/PrintConfig.cpp")
+(let [source (slurp (str (System/getProperty "user.home") "/PP/hive/clones-ref/BambuStudio/src/libslic3r/PrintConfig.cpp"))
       rows (extract source)]
   (spit "resources/hive_bambu/slicer.edn" (with-out-str (pp/pprint rows)))
   (println "Extracted" (count rows) "active CLI options"))
